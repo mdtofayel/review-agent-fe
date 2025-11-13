@@ -1,127 +1,272 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import type React from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../../../components/Layout";
 import { API } from "../../../api";
-import type { ScrapeJob } from "../../../api/types";
-import { Link } from "react-router-dom";
+import type { ScrapeJob, JobStatus } from "../../../api/types";
+
+type JobsResp = { items: ScrapeJob[]; page: number; size: number; total: number };
+
+const PAGE_SIZE = 10;
 
 export default function AdminDashboard() {
   const qc = useQueryClient();
-  const [keyword, setKeyword] = useState("");
-  const [status, setStatus] =
-    useState<"" | "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED">("");
+  const [sp, setSp] = useSearchParams();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["jobs", status],
+  const page = Number(sp.get("page") || "1");
+  const status = (sp.get("status") as JobStatus | null) || null;
+
+  // list jobs from backend
+  const jobsQ = useQuery<JobsResp>({
+    queryKey: ["jobs", page, status],
     queryFn: () =>
       API.listScrapeJobs({
-        page: 1,
-        size: 10,
-        status: (status || undefined) as any,
+        // backend uses page index starting at zero
+        page: page > 0 ? page - 1 : 0,
+        size: PAGE_SIZE,
+        status: status ?? undefined,
       }),
-    refetchInterval: 2000,
+    refetchInterval: 2000, // remove this if you do not want auto refresh
   });
 
-  const create = useMutation({
-    mutationFn: API.createScrapeJob,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["jobs"] }),
+  // create job
+  const [keyword, setKeyword] = useState("");
+  const [market, setMarket] = useState("");
+  const [depth, setDepth] = useState<number | undefined>(20);
+
+  const createM = useMutation({
+    mutationFn: () =>
+      API.createScrapeJob({ keyword, market: market || undefined, depth }),
+    onSuccess: () => {
+      setKeyword("");
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
   });
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!keyword.trim()) return;
-    create.mutate({ keyword: keyword.trim(), depth: 20 });
-    setKeyword("");
+  // update url query for page and status
+  function setPage(p: number) {
+    const next = new URLSearchParams(sp);
+    next.set("page", String(p));
+    setSp(next, { replace: true });
   }
+
+  function setStatusFilter(s: JobStatus | "ALL") {
+    const next = new URLSearchParams(sp);
+    if (s === "ALL") next.delete("status");
+    else next.set("status", s);
+    next.set("page", "1");
+    setSp(next, { replace: true });
+  }
+
+  const totalPages = useMemo(() => {
+    const t = jobsQ.data?.total ?? 0;
+    return Math.max(1, Math.ceil(t / PAGE_SIZE));
+  }, [jobsQ.data]);
 
   return (
     <Layout>
-      <h1 className="text-2xl font-semibold mb-4">Admin Dashboard</h1>
+      <div className="p-4 space-y-6">
+        {/* create job */}
+        <section className="rounded-2xl border bg-white p-4">
+          <h2 className="text-lg font-semibold mb-3">Start new scrape</h2>
+          <div className="flex flex-col md:flex-row gap-2">
+            <input
+              className="border rounded px-3 py-2 w-full md:w-1/2"
+              placeholder="keyword"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            <input
+              className="border rounded px-3 py-2 w-full md:w-1/4"
+              placeholder="market (optional)"
+              value={market}
+              onChange={(e) => setMarket(e.target.value)}
+            />
+            <input
+              className="border rounded px-3 py-2 w-full md:w-24"
+              type="number"
+              min={1}
+              placeholder="depth"
+              value={depth ?? 20}
+              onChange={(e) => setDepth(Number(e.target.value))}
+            />
+            <button
+              onClick={() => createM.mutate()}
+              disabled={!keyword || createM.isPending}
+              className="rounded px-4 py-2 bg-indigo-600 text-white disabled:opacity-50"
+            >
+              {createM.isPending ? "Starting..." : "Start"}
+            </button>
+          </div>
+          {createM.isError && (
+            <p className="text-rose-700 text-sm mt-2">Could not start job.</p>
+          )}
+        </section>
 
-      <form onSubmit={submit} className="flex gap-2 mb-6">
-        <input
-          className="border rounded px-3 py-2 w-full"
-          placeholder="Enter keyword e.g. iphone 15 case"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-        />
-        <button className="rounded bg-black text-white px-4 py-2" disabled={create.isPending}>
-          {create.isPending ? "Running…" : "Run"}
-        </button>
-      </form>
+        {/* jobs table */}
+        <section className="rounded-2xl border bg-white p-0 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <h2 className="text-lg font-semibold">Jobs</h2>
+            <div className="flex items-center gap-2">
+              <StatusButton
+                label="All"
+                active={!status}
+                onClick={() => setStatusFilter("ALL")}
+              />
+              <StatusButton
+                label="Pending"
+                active={status === "PENDING"}
+                onClick={() => setStatusFilter("PENDING")}
+              />
+              <StatusButton
+                label="Running"
+                active={status === "RUNNING"}
+                onClick={() => setStatusFilter("RUNNING")}
+              />
+              <StatusButton
+                label="Succeeded"
+                active={status === "SUCCEEDED"}
+                onClick={() => setStatusFilter("SUCCEEDED")}
+              />
+              <StatusButton
+                label="Failed"
+                active={status === "FAILED"}
+                onClick={() => setStatusFilter("FAILED")}
+              />
+            </div>
+          </div>
 
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium">Recent jobs</h2>
-        <select
-          className="border rounded px-2 py-1 text-sm"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as any)}
-        >
-          <option value="">All</option>
-          <option value="PENDING">Pending</option>
-          <option value="RUNNING">Running</option>
-          <option value="SUCCEEDED">Succeeded</option>
-          <option value="FAILED">Failed</option>
-        </select>
-      </div>
+          {jobsQ.isLoading ? (
+            <div className="p-4">Loading…</div>
+          ) : jobsQ.isError ? (
+            <div className="p-4 text-rose-700">Could not load jobs.</div>
+          ) : (
+            <>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-left">
+                  <tr>
+                    <Th>Id</Th>
+                    <Th>Keyword</Th>
+                    <Th>Status</Th>
+                    <Th>Created</Th>
+                    <Th>Started</Th>
+                    <Th>Ended</Th>
+                    <Th />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {jobsQ.data?.items.map((j) => (
+                    <tr key={j.id} className="hover:bg-gray-50">
+                      <Td className="font-mono">{j.id}</Td>
+                      <Td>{j.keyword}</Td>
+                      <Td>
+                        <StatusPill status={j.status} />
+                      </Td>
+                      <Td>{new Date(j.createdAt).toLocaleString()}</Td>
+                      <Td>
+                        {j.startedAt
+                          ? new Date(j.startedAt).toLocaleString()
+                          : "-"}
+                      </Td>
+                      <Td>
+                        {j.endedAt
+                          ? new Date(j.endedAt).toLocaleString()
+                          : "-"}
+                      </Td>
+                      <Td>
+                        <Link
+                          to={`/admin/jobs/${j.id}`}
+                          className="text-indigo-600 hover:underline"
+                        >
+                          View
+                        </Link>
+                      </Td>
+                    </tr>
+                  ))}
+                  {jobsQ.data && jobsQ.data.items.length === 0 && (
+                    <tr>
+                      <Td
+                        colSpan={7}
+                        className="text-center py-8 text-gray-500"
+                      >
+                        No jobs
+                      </Td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
 
-      <div className="overflow-x-auto rounded-2xl border bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr className="[&>th]:px-4 [&>th]:py-2 text-left text-gray-600">
-              <th>Keyword</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-gray-500">
-                  Loading…
-                </td>
-              </tr>
-            ) : data?.items?.length ? (
-              data.items.map((j: ScrapeJob) => (
-                <tr key={j.id} className="border-t">
-                  <td className="px-4 py-3">{j.keyword}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={j.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    {new Date(j.createdAt).toLocaleTimeString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link className="text-blue-600 hover:underline" to={`/jobs/${j.id}`}>
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-gray-500">
-                  No jobs yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              {/* pager */}
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <button
+                  className="px-3 py-1 rounded border disabled:opacity-50"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                >
+                  Prev
+                </button>
+                <div className="text-sm">
+                  Page {page} of {totalPages}
+                </div>
+                <button
+                  className="px-3 py-1 rounded border disabled:opacity-50"
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          )}
+        </section>
       </div>
     </Layout>
   );
 }
 
-function StatusBadge({ status }: { status: ScrapeJob["status"] }) {
-  const map: Record<ScrapeJob["status"], string> = {
-    PENDING: "bg-gray-100 text-gray-800 border-gray-200",
-    RUNNING: "bg-blue-50 text-blue-700 border-blue-200",
-    SUCCEEDED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    FAILED: "bg-rose-50 text-rose-700 border-rose-200",
+function Th(props: React.HTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <th
+      {...props}
+      className={`px-4 py-2 font-medium ${props.className ?? ""}`}
+    />
+  );
+}
+
+function Td(props: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <td {...props} className={`px-4 py-2 ${props.className ?? ""}`} />
+  );
+}
+
+function StatusButton(props: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const { label, active, onClick } = props;
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1 rounded border ${
+        active ? "bg-indigo-600 text-white border-indigo-600" : "bg-white"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function StatusPill({ status }: { status: JobStatus }) {
+  const styles: Record<JobStatus, string> = {
+    PENDING: "bg-gray-200 text-gray-800",
+    RUNNING: "bg-amber-200 text-amber-900",
+    SUCCEEDED: "bg-emerald-200 text-emerald-900",
+    FAILED: "bg-rose-200 text-rose-900",
   };
   return (
-    <span className={`text-xs px-2 py-1 rounded-full border ${map[status]}`}>
+    <span className={`text-xs px-2 py-1 rounded ${styles[status]}`}>
       {status}
     </span>
   );

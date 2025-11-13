@@ -9,45 +9,91 @@ import SortBar from "../../components/SortBar";
 import FilterSheet from "../../components/FilterSheet";
 import { API } from "../../api";
 
-function useQueryParams() { const s = new URLSearchParams(useLocation().search); return Object.fromEntries(s.entries()); }
+function useQueryParams() {
+  const search = useLocation().search;
+  const s = new URLSearchParams(search);
+  return Object.fromEntries(s.entries());
+}
 
 export default function Search() {
   const nav = useNavigate();
   const q = useQueryParams();
-  const [page, setPage] = useState(Number(q.page ?? 1));
+
+  // UI state is 1 based
+  const [page, setPage] = useState(Number(q.page ?? 1) || 1);
   const [sort, setSort] = useState(q.sort ?? "relevance");
-  const [minRating, setMinRating] = useState(Number(q.minRating ?? 0));
+  const [minRating, setMinRating] = useState(Number(q.minRating ?? 0) || 0);
   const [openFilters, setOpenFilters] = useState(false);
 
-  useEffect(()=> {
-    const params = new URLSearchParams({ ...q, page: String(page), sort, minRating: String(minRating) });
+  // keep query string in sync when page or sort or minRating changes
+  useEffect(() => {
+    const params = new URLSearchParams({
+      ...q,
+      page: String(page),
+      sort,
+      minRating: String(minRating),
+    });
     nav({ search: params.toString() }, { replace: true });
-  }, [page, sort, minRating]);
+  }, [page, sort, minRating, nav]); // q comes from location, so it updates when URL changes
 
   const { data, isLoading } = useQuery({
-    queryKey: ["search", q.q, page, sort, minRating, q.category],
-    queryFn: () => API.searchProducts({ q: q.q, category: q.category, page, sort: sort as any, size: 12, minRating }),
+    queryKey: ["search", q.q, q.category, page, sort, minRating],
+    queryFn: () =>
+      API.searchProducts({
+        q: q.q || undefined,
+        category: q.category || undefined,
+        // backend expects page starting at 0
+        page: Math.max(page - 1, 0),
+        sort: sort as any,
+        size: 12,
+        minRating: minRating || undefined,
+      }),
   });
 
   return (
     <Layout>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Results {q.q ? `for “${q.q}”` : ""}</h1>
+        <h1 className="text-xl font-semibold">
+          Results {q.q ? `for “${q.q}”` : ""}
+        </h1>
         <div className="flex items-center gap-3">
-          <button className="sm:hidden px-3 py-2 border rounded" onClick={()=>setOpenFilters(true)}>Filters</button>
-          <SortBar sort={sort} setSort={setSort}/>
+          <button
+            className="sm:hidden px-3 py-2 border rounded"
+            onClick={() => setOpenFilters(true)}
+          >
+            Filters
+          </button>
+          <SortBar sort={sort} setSort={setSort} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
         {isLoading
-          ? Array.from({length:6}).map((_,i)=><SkeletonCard key={i}/>)
-          : data?.items.map(p => <ProductCard key={p.id} p={p} />)
-        }
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))
+          : data && data.items.length > 0
+          ? data.items.map((p) => <ProductCard key={p.id} p={p} />)
+          : (
+            <div className="col-span-full text-gray-500 text-sm">
+              No products found for this search.
+            </div>
+          )}
       </div>
 
-      <Pagination page={data?.page ?? 1} size={data?.size ?? 12} total={data?.total ?? 0} onPage={setPage} />
-      <FilterSheet open={openFilters} onClose={()=>setOpenFilters(false)} minRating={minRating} setMinRating={setMinRating}/>
+      <Pagination
+        page={page}                        // UI page (1 based)
+        size={data?.size ?? 12}
+        total={data?.total ?? 0}
+        onPage={setPage}
+      />
+
+      <FilterSheet
+        open={openFilters}
+        onClose={() => setOpenFilters(false)}
+        minRating={minRating}
+        setMinRating={setMinRating}
+      />
     </Layout>
   );
 }

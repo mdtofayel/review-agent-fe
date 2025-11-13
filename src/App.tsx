@@ -14,14 +14,15 @@ export default function App() {
     <QueryClientProvider client={qc}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home/>} />
-          <Route path="/search" element={<Search/>} />
-          <Route path="/p/:slug" element={<ProductDetail/>} />
-          <Route path="/best/:slug" element={<RoundupPage/>} />
-          <Route path="*" element={<div className="p-6">Not Found</div>} />          
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/jobs/:id" element={<JobDetail />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/p/:slug" element={<ProductDetail />} />
+          <Route path="/best/:slug" element={<RoundupPage />} />
 
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/jobs/:id" element={<JobDetail />} />
+
+          <Route path="*" element={<div className="p-6">Not Found</div>} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
