@@ -17,20 +17,17 @@ export default function AdminDashboard() {
   const page = Number(sp.get("page") || "1");
   const status = (sp.get("status") as JobStatus | null) || null;
 
-  // list jobs from backend
   const jobsQ = useQuery<JobsResp>({
     queryKey: ["jobs", page, status],
     queryFn: () =>
       API.listScrapeJobs({
-        // backend uses page index starting at zero
         page: page > 0 ? page - 1 : 0,
         size: PAGE_SIZE,
         status: status ?? undefined,
       }),
-    refetchInterval: 2000, // remove this if you do not want auto refresh
+    refetchInterval: 2000,
   });
 
-  // create job
   const [keyword, setKeyword] = useState("");
   const [market, setMarket] = useState("");
   const [depth, setDepth] = useState<number | undefined>(20);
@@ -44,7 +41,6 @@ export default function AdminDashboard() {
     },
   });
 
-  // update url query for page and status
   function setPage(p: number) {
     const next = new URLSearchParams(sp);
     next.set("page", String(p));
@@ -67,6 +63,19 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="p-4 space-y-6">
+        {/* top admin header with link to nav page */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Admin dashboard</h1>
+          <div className="flex gap-2">
+            <Link
+              to="/admin/nav"
+              className="rounded px-3 py-2 bg-indigo-600 text-white text-sm hover:bg-indigo-700"
+            >
+              Manage navigation
+            </Link>
+          </div>
+        </div>
+
         {/* create job */}
         <section className="rounded-2xl border bg-white p-4">
           <h2 className="text-lg font-semibold mb-3">Start new scrape</h2>
@@ -197,7 +206,6 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
 
-              {/* pager */}
               <div className="flex items-center justify-between px-4 py-3 border-t">
                 <button
                   className="px-3 py-1 rounded border disabled:opacity-50"

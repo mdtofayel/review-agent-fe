@@ -1,3 +1,22 @@
+export type RawProduct = {
+  id: number;
+  jobId: string;
+  url: string;
+  title: string;
+  priceRaw: string | null;
+  ratingRaw: string | null;
+  reviewsRaw: string | null;
+  availability: string | null;
+  descriptionBullets: string | null;
+  longDescription: string | null;
+  technicalDetailsJson: string | null;
+  categoryGuess: string | null;
+  imageUrl: string | null;
+  createdAt: string;
+  processed: boolean;
+};
+
+
 // Shared API types for FE
 
 export type Product = {
@@ -42,27 +61,52 @@ export type SearchParams = {
   priceMax?: number;
 };
 
-// ---- Roundup article types ----
-export type FAQ = { q: string; a_md: string };
-
-export type RoundupProduct = Product & {
-  rank: number;                   // 1..N
-  blurb?: string;                 // one-line “why we picked it”
-  verdict?: string;               // short verdict for mini-review
+// -------- FAQ type (matches backend Faq record) --------
+export type Faq = {
+  question: string;
+  answer: string;
 };
 
-export type RoundupArticle = {
-  slug: string;                   // /best/:slug
+// -------- Seo type (matches backend Seo record) --------
+export type Seo = {
+  title?: string;
+  description?: string;
+};
+
+// -------- Roundup product --------
+export type RoundupProduct = {
+  id: string;
+  slug: string;
   title: string;
-  intro_md: string;               // 1) Introduction (MD)
-  products: RoundupProduct[];     // 2) Top list + 3) Mini-reviews
-  buying_guide_md: string;        // 4) Buying guidelines (MD)
-  faqs: FAQ[];                    // 5) FAQs
-  conclusion_md: string;          // 6) Conclusion (MD)
-  updatedAt: string;              // ISO
-  seo?: { metaTitle?: string; metaDescription?: string };
+  brand?: string;
+  price?: number;
+  currency?: string;
+  image?: string;
+  rating?: number;
+  votes?: number;
+  rank: number;
+  blurb?: string;
+  verdict?: string;
+};
+
+// -------- Main Roundup Article --------
+export type RoundupArticle = {
+  slug: string;
+  title: string;
+
+  intro_md?: string;
+  buying_guide_md?: string;
+  conclusion_md?: string;
+
+  products: RoundupProduct[];
+  faqs?: Faq[];
+
+  updated_at?: string;
+
+  seo?: Seo;
   category?: string;
 };
+
 export type JobStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
 
 export type ScrapeJob = {
@@ -82,3 +126,34 @@ export type JobLog = {
   level: 'INFO' | 'WARN' | 'ERROR';
   message: string;
 };
+export type NavCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  path?: string | null;
+  icon?: string | null;
+  visible?: boolean;
+  orderIndex?: number | null;
+  parentId?: number | null;
+  children?: NavCategory[];
+};
+// src/api/types.ts
+export type BestListSummary = {
+  id: number;
+  slug: string;
+  title: string;
+  summary: string;
+  heroImageUrl: string | null;
+  label: string | null; // for example PHONES, GAMING
+  author: string;
+  publishedAt: string;
+};
+
+export type PostSummary = {
+  id: number;
+  title: string;
+  url: string;
+  thumbnailUrl: string | null;
+  publishedAt: string;
+};
+

@@ -7,7 +7,10 @@ import type {
   ScrapeJob,
   JobLog,
   JobStatus,
+  RawProduct,
+  NavCategory,PostSummary,BestListSummary,
 } from "./types";
+
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
@@ -108,4 +111,66 @@ export async function getJobLogs(id: string, after?: string) {
     params: { after },
   });
   return data;
+}
+
+
+export async function getRawProductsForJob(id: string): Promise<RawProduct[]> {
+  const { data } = await api.get<RawProduct[]>(`/api/scrape-jobs/${id}/raw-products`);
+  return data;
+}
+
+const client = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080",
+});
+// already used by Navbar
+export async function getNav(): Promise<NavCategory[]> {
+  const res = await client.get<NavCategory[]>("/api/admin/nav");
+  return res.data;
+}
+
+export async function createNavCategory(payload: {
+  name: string;
+  slug: string;
+  path?: string | null;
+  icon?: string | null;
+  parentId?: number | null;
+  visible?: boolean;
+}): Promise<NavCategory> {
+  const res = await client.post<NavCategory>("/api/admin/nav", payload);
+  return res.data;
+}
+
+export async function updateNavCategory(
+  id: number,
+  payload: {
+    name?: string;
+    slug?: string;
+    path?: string | null;
+    icon?: string | null;
+    parentId?: number | null;
+    visible?: boolean;
+  }
+): Promise<NavCategory> {
+  const res = await client.put<NavCategory>(`/api/admin/nav/${id}`, payload);
+  return res.data;
+}
+
+export async function deleteNavCategory(id: number): Promise<void> {
+  await client.delete(`/api/admin/nav/${id}`);
+}
+// http.ts
+
+export async function getBestLists(): Promise<BestListSummary[]> {
+  const res = await api.get<BestListSummary[]>("/api/best-lists");
+  return res.data;
+}
+
+export async function getTopPosts(): Promise<PostSummary[]> {
+  const res = await api.get<PostSummary[]>("/api/posts/top");
+  return res.data;
+}
+
+export async function getLatestReviews(): Promise<PostSummary[]> {
+  const res = await api.get<PostSummary[]>("/api/reviews/latest");
+  return res.data;
 }
