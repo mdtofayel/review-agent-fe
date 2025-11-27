@@ -1,4 +1,3 @@
-// no change at the top
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -62,7 +61,9 @@ export default function Navbar() {
     const hasChildren =
       Array.isArray(root.children) && root.children.length > 0;
 
-    const targetPath = root.path || `/best/${root.slug}`;
+    // use root.path if present, otherwise default to "/slug"
+    const targetPath = root.path || `/${root.slug}`;
+    const isReviewsRoot = root.slug === "reviews";
 
     if (!hasChildren) {
       return (
@@ -100,7 +101,9 @@ export default function Navbar() {
                   key={child.id}
                   to={
                     child.path ||
-                    `/search?category=${encodeURIComponent(child.slug)}`
+                    (isReviewsRoot
+                      ? `/reviews?category=${encodeURIComponent(child.slug)}`
+                      : `/search?category=${encodeURIComponent(child.slug)}`)
                   }
                   className="block px-4 py-2 text-sm hover:bg-indigo-50"
                   onClick={closeAllMenus}
@@ -137,15 +140,7 @@ export default function Navbar() {
           {/* navigation roots from admin */}
           {visibleRoots.map(root => renderRootItem(root))}
 
-          {/* best lists entry as its own main item */}
-          <Link
-            to="/best"
-            className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10"
-          >
-            Best
-          </Link>
-
-          {/* overflow menu stays the same */}
+          {/* overflow menu */}
           {overflowRoots.length > 0 && (
             <div className="relative">
               <button
@@ -164,7 +159,7 @@ export default function Navbar() {
                 >
                   <div className="py-2">
                     {overflowRoots.map(root => {
-                      const path = root.path || `/best/${root.slug}`;
+                      const path = root.path || `/${root.slug}`;
                       return (
                         <Link
                           key={root.id}

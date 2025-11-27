@@ -27,10 +27,10 @@ export type Product = {
   price?: number;
   currency?: string;
   image: string;
-  rating: number;                 // 0..5
+  rating: number;
   votes?: number;
   highlight?: string;
-  badges?: string[];              // e.g. ["Best Value"]
+  badges?: string[];
   specs?: Record<string, string | number>;
   review?: {
     summary: string;
@@ -38,15 +38,26 @@ export type Product = {
     cons: string[];
     body_md: string;
     author?: string;
-    updatedAt?: string;           // ISO
+    updatedAt?: string;
   };
   seo?: {
     metaTitle?: string;
     metaDescription?: string;
   };
-  createdAt: string;              // ISO
+
+  // new: zero, one or many marketplace offers
+  offers?: {
+    id?: string;
+    merchant: string;          // for example "amazon.de"
+    priceText?: string;        // for example "899,00 €"
+    label?: string;            // button text, for example "Check price"
+    url?: string;              // outbound link to merchant
+  }[];
+
+  createdAt: string;
   category?: string;
 };
+
 
 export type Page<T> = { items: T[]; page: number; size: number; total: number };
 
@@ -63,8 +74,8 @@ export type SearchParams = {
 
 // -------- FAQ type (matches backend Faq record) --------
 export type Faq = {
-  question: string;
-  answer: string;
+  q: string;
+  a_md: string;
 };
 
 // -------- Seo type (matches backend Seo record) --------
@@ -73,10 +84,11 @@ export type Seo = {
   description?: string;
 };
 
-// -------- Roundup product --------
+// -------- Roundup product (matches RoundupArticle.RoundupProduct record) --------
 export type RoundupProduct = {
   id: string;
   slug: string;
+  rank: number;
   title: string;
   brand?: string;
   price?: number;
@@ -84,27 +96,44 @@ export type RoundupProduct = {
   image?: string;
   rating?: number;
   votes?: number;
-  rank: number;
-  blurb?: string;
+  snippet?: string;
   verdict?: string;
+  pros?: string[];
+  cons?: string[];
+  affiliateLinks?: Record<string, string>; // label -> url
+  reviewSlug?: string;                     // slug for full review page
 };
 
-// -------- Main Roundup Article --------
+// -------- Main Roundup Article (matches backend RoundupArticle record) --------
 export type RoundupArticle = {
   slug: string;
   title: string;
+  subtitle?: string;
+  heroImageUrl?: string;
+  author?: string;
+  publishedAt: string;      // Instant as ISO
+  lastUpdatedAt?: string;   // Instant as ISO
 
-  intro_md?: string;
-  buying_guide_md?: string;
-  conclusion_md?: string;
-
+  introMd?: string;
   products: RoundupProduct[];
+
+  buyingGuideMd?: string;
+  testingMethodMd?: string;
   faqs?: Faq[];
 
-  updated_at?: string;
-
+  conclusionMd?: string;
   seo?: Seo;
   category?: string;
+  testData?: TestMetricRow[];
+  fullSpecs?: FullSpecRow[];
+};
+export type FullSpecRow = {
+  label: string;
+  values: Record<string, string>;
+};
+export type TestMetricRow = {
+  label: string;
+  values: Record<string, string | number>;
 };
 
 export type JobStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
@@ -156,4 +185,34 @@ export type PostSummary = {
   thumbnailUrl: string | null;
   publishedAt: string;
 };
+
+export type DealProduct = {
+  id: string;
+  title: string;
+  imageUrl: string;
+  merchant: string;      // for example "amazon.de"
+  priceLabel: string;    // for example "CHECK PRICE"
+  targetUrl: string;     // outbound link
+};
+
+export interface DealArticle {
+  slug: string;
+  title: string;
+  label?: string;
+  heroImageUrl: string;
+  author?: string;
+  publishedAt?: string;
+  introMd?: string;
+  bodyMd?: string;
+
+  // already there:
+  seo?: Seo;
+
+  // new optional fields for tag and navigation
+  tag?: string;
+  prevTitle?: string;
+  prevSlug?: string;
+  nextTitle?: string;
+  nextSlug?: string;
+}
 

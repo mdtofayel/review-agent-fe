@@ -8,7 +8,7 @@ import type {
   JobLog,
   JobStatus,
   RawProduct,
-  NavCategory,PostSummary,BestListSummary,
+  NavCategory,PostSummary,BestListSummary,DealArticle,
 } from "./types";
 
 
@@ -53,7 +53,7 @@ export async function searchProducts(params: SearchParams): Promise<Page<Product
       priceMax,
     },
   });
-
+  
   // map server page (zero indexed) back to front end style
   return {
     ...data,
@@ -170,7 +170,19 @@ export async function getTopPosts(): Promise<PostSummary[]> {
   return res.data;
 }
 
-export async function getLatestReviews(): Promise<PostSummary[]> {
-  const res = await api.get<PostSummary[]>("/api/reviews/latest");
+export async function getLatestReviews(limit = 8): Promise<PostSummary[]> {
+  const res = await api.get<PostSummary[]>("/api/reviews/latest", {
+    params: { limit },
+  });
+  return res.data;
+}
+
+export async function getFeaturedDeal(): Promise<DealArticle> {
+  const res = await api.get<DealArticle>("/api/deals/featured");
+  return res.data;
+}
+
+export async function getDealBySlug(slug: string): Promise<DealArticle> {
+  const res = await api.get<DealArticle>(`/api/deals/${slug}`);
   return res.data;
 }
