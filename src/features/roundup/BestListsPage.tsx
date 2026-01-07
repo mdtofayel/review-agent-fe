@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { API } from "../../api";
 import type { BestListSummary, PostSummary } from "../../api/types";
 import Layout from "../../components/Layout";
+import ArticleSidebar from "../common/ArticleSidebar";
 
 export function BestListsPage() {
   const [sp] = useSearchParams();
@@ -160,93 +161,7 @@ export function BestListsPage() {
   </div>
 
         {/* right sidebar */}
-        <aside className="space-y-8">
-          {topPosts && topPosts.length > 0 && (
-            <section>
-              <h3 className="text-base font-semibold mb-3 border-b border-gray-200 pb-2">
-                Top posts
-              </h3>
-              <div className="space-y-4">
-                {topPosts.map((post) => (
-                  <Link
-                    key={post.id}
-                    to={post.url}
-                    className="flex gap-3 group"
-                  >
-                    {post.thumbnailUrl && (
-                      <img
-                        src={post.thumbnailUrl}
-                        alt={post.title}
-                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                      />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium leading-snug group-hover:text-indigo-700">
-                        {post.title}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(post.publishedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section>
-            <h3 className="text-base font-semibold mb-3 border-b border-gray-200 pb-2">
-              Stay in touch
-            </h3>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <a className="px-3 py-2 rounded-lg border border-gray-200 text-center">
-                Facebook
-              </a>
-              <a className="px-3 py-2 rounded-lg border border-gray-200 text-center">
-                Instagram
-              </a>
-              <a className="px-3 py-2 rounded-lg border border-gray-200 text-center">
-                YouTube
-              </a>
-              <a className="px-3 py-2 rounded-lg border border-gray-200 text-center">
-                TikTok
-              </a>
-            </div>
-          </section>
-
-          {latestReviews && latestReviews.length > 0 && (
-            <section>
-              <h3 className="text-base font-semibold mb-3 border-b border-gray-200 pb-2">
-                Latest reviews
-              </h3>
-              <div className="space-y-4">
-                {latestReviews.map((post) => (
-                  <Link
-                    key={post.id}
-                    to={post.url}
-                    className="flex gap-3 group"
-                  >
-                    {post.thumbnailUrl && (
-                      <img
-                        src={post.thumbnailUrl}
-                        alt={post.title}
-                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                      />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium leading-snug group-hover:text-indigo-700">
-                        {post.title}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(post.publishedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-        </aside>
+       <ArticleSidebar/>
       </section>
     </Layout>
   );

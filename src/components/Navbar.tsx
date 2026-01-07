@@ -1,3 +1,4 @@
+// src/components/Navbar.tsx
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +12,9 @@ export default function Navbar() {
   const [sp] = useSearchParams();
   const [q, setQ] = useState(sp.get("q") || "");
 
-  useEffect(() => setQ(sp.get("q") || ""), [sp]);
+  useEffect(() => {
+    setQ(sp.get("q") || "");
+  }, [sp]);
 
   const { data: navItems } = useQuery<NavCategory[]>({
     queryKey: ["nav"],
@@ -57,19 +60,31 @@ export default function Navbar() {
     setOpenRootId(null);
   }
 
+  // helper to decide which base path a root uses
+  function getSectionPath(root: NavCategory): string {
+    // special handling for our Reviews menu
+    if (root.name.toLowerCase() === "reviews") {
+      return "/reviews";
+    }
+
+    // otherwise prefer explicit path from backend, then slug
+    if (root.path && root.path.trim().length > 0) {
+      return root.path.startsWith("/") ? root.path : `/${root.path}`;
+    }
+    return `/${root.slug}`;
+  }
+
   function renderRootItem(root: NavCategory) {
     const hasChildren =
       Array.isArray(root.children) && root.children.length > 0;
 
-    // use root.path if present, otherwise default to "/slug"
-    const targetPath = root.path || `/${root.slug}`;
-    const isReviewsRoot = root.slug === "reviews";
+    const sectionPath = getSectionPath(root); // base path for this root
 
     if (!hasChildren) {
       return (
         <Link
           key={root.id}
-          to={targetPath}
+          to={sectionPath}
           className="px-3 py-2 rounded-lg text-sm hover:bg-white/10"
         >
           {root.name}
@@ -96,21 +111,22 @@ export default function Navbar() {
                        shadow-lg border border-slate-200 max-h-80 overflow-y-auto"
           >
             <div className="py-2">
-              {(root.children ?? []).map(child => (
-                <Link
-                  key={child.id}
-                  to={
-                    child.path ||
-                    (isReviewsRoot
-                      ? `/reviews?category=${encodeURIComponent(child.slug)}`
-                      : `/search?category=${encodeURIComponent(child.slug)}`)
-                  }
-                  className="block px-4 py-2 text-sm hover:bg-indigo-50"
-                  onClick={closeAllMenus}
-                >
-                  {child.name}
-                </Link>
-              ))}
+              {(root.children ?? []).map(child => {
+                const childTarget =
+                  child.path ||
+                  `${sectionPath}?category=${encodeURIComponent(child.slug)}`;
+
+                return (
+                  <Link
+                    key={child.id}
+                    to={childTarget}
+                    className="block px-4 py-2 text-sm hover:bg-indigo-50"
+                    onClick={closeAllMenus}
+                  >
+                    {child.name}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -159,7 +175,7 @@ export default function Navbar() {
                 >
                   <div className="py-2">
                     {overflowRoots.map(root => {
-                      const path = root.path || `/${root.slug}`;
+                      const path = getSectionPath(root);
                       return (
                         <Link
                           key={root.id}
