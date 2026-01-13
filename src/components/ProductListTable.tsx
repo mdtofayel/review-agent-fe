@@ -11,11 +11,12 @@ export default function ProductListTable({ items }: { items: RoundupProduct[] })
             <th>#</th><th>Product</th><th>Rating</th><th>Price</th><th className="hidden sm:table-cell">Why it’s here</th>
           </tr>
         </thead>
+        
         <tbody>
           {items.map(p => (
             <tr key={p.id} className="border-t hover:bg-gray-50">
               <td className="px-4 py-3 font-semibold">{p.rank}</td>
-              <td className="px-4 py-3">
+              <td    className="px-4 py-3">
                 <Link to={`/p/${p.slug}`} className="font-medium hover:underline">{p.title}</Link>
               </td>
               <td className="px-4 py-3"><RatingStars value={p.rating} /></td>
