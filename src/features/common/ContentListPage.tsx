@@ -166,6 +166,7 @@ export default function ContentListPage() {
       ? "All our current deals and offers in one place."
       : section === "news"
       ? "Latest news and updates from the tech world."
+      
       : "Our editor-tested best lists and roundups.";
 
   return (
@@ -192,3 +193,4 @@ function capitalize(text: string) {
   if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+  
