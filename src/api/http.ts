@@ -122,8 +122,14 @@ export async function getRawProductsForJob(id: string): Promise<RawProduct[]> {
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080",
 });
-// already used by Navbar
+// Public nav tree for Navbar (read-only, visible only)
 export async function getNav(): Promise<NavCategory[]> {
+  const res = await client.get<NavCategory[]>("/api/nav");
+  return res.data;
+}
+
+// Full nav tree for admin (includes hidden)
+export async function getAdminNav(): Promise<NavCategory[]> {
   const res = await client.get<NavCategory[]>("/api/admin/nav");
   return res.data;
 }
@@ -133,29 +139,31 @@ export async function createNavCategory(payload: {
   slug: string;
   path?: string | null;
   icon?: string | null;
-  parentId?: number | null;
+  parentId?: string | null;
   visible?: boolean;
+  orderIndex?: number | null;
 }): Promise<NavCategory> {
   const res = await client.post<NavCategory>("/api/admin/nav", payload);
   return res.data;
 }
 
 export async function updateNavCategory(
-  id: number,
+  id: string,
   payload: {
     name?: string;
     slug?: string;
     path?: string | null;
     icon?: string | null;
-    parentId?: number | null;
+    parentId?: string | null;
     visible?: boolean;
+    orderIndex?: number | null;
   }
 ): Promise<NavCategory> {
   const res = await client.put<NavCategory>(`/api/admin/nav/${id}`, payload);
   return res.data;
 }
 
-export async function deleteNavCategory(id: number): Promise<void> {
+export async function deleteNavCategory(id: string): Promise<void> {
   await client.delete(`/api/admin/nav/${id}`);
 }
 // http.ts

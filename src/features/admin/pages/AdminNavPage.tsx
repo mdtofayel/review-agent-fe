@@ -5,12 +5,12 @@ import type { NavCategory } from "../../../api/types";
 import Layout from "../../../components/Layout";
 
 type FormState = {
-  id?: number;
+  id?: string;
   name: string;
   slug: string;
   path: string;
   icon: string;
-  parentId: number | null;
+  parentId: string | null;
   visible: boolean;
 };
 
@@ -27,13 +27,13 @@ export default function AdminNavPage() {
   const queryClient = useQueryClient();
 
   const { data: navTree, isLoading, isError } = useQuery<NavCategory[]>({
-    queryKey: ["nav"],
-    queryFn: () => API.getNav(),
+    queryKey: ["admin-nav"],
+    queryFn: () => API.getAdminNav(),
     staleTime: 5 * 60 * 1000,
   });
 
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<"create" | "edit">("create");
 
   const createMutation = useMutation({
@@ -49,7 +49,7 @@ export default function AdminNavPage() {
 
   const updateMutation = useMutation({
     mutationFn: (args: {
-      id: number;
+      id: string;
       payload: Parameters<typeof API.updateNavCategory>[1];
     }) => API.updateNavCategory(args.id, args.payload),
     onSuccess: () => {
@@ -61,7 +61,7 @@ export default function AdminNavPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => API.deleteNavCategory(id),
+    mutationFn: (id: string) => API.deleteNavCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nav"] });
       if (selectedId != null) {

@@ -222,6 +222,8 @@ export default function AdminDashboard() {
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
                 >
+
+                  
                   Next
                 </button>
               </div>

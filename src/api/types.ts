@@ -156,14 +156,14 @@ export type JobLog = {
   message: string;
 };
 export type NavCategory = {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   path?: string | null;
   icon?: string | null;
   visible?: boolean;
   orderIndex?: number | null;
-  parentId?: number | null;
+  parentId?: string | null;
   children?: NavCategory[];
 };
 // src/api/types.ts

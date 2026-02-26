@@ -1,5 +1,4 @@
 // src/features/singleReview/SingleReview.tsx
-import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -14,6 +13,8 @@ import JumpToSection, {
 } from "../../components/JumpToSection";
 import TrustJournalism from "../../components/TrustJournalism";
 import RelatedPosts from "../../components/RelatedPosts";
+import SEO from "../../components/SEO";
+import JSONLD from "../../components/JSONLD";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -52,14 +53,6 @@ export default function SingleReview() {
     queryFn: () => API.getProductBySlug(slug!),
     enabled: !!slug,
   });
-
-  useEffect(() => {
-    if (product) {
-      const metaTitle =
-        product.seo?.metaTitle || product.title || "ReviewHub review";
-      document.title = metaTitle;
-    }
-  }, [product]);
 
   if (!product && isLoading) {
     return (
@@ -158,8 +151,44 @@ export default function SingleReview() {
     jumpSections.push({ id: "full-review", label: "Full review" });
   }
 
+  // JSON-LD: Product + AggregateRating only when rating (and optionally review_count) exist
+  const jsonLd =
+    product.rating != null && (product.votes != null || product.votes === 0)
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.title,
+          description: product.review?.summary || product.seo?.metaDescription || product.title,
+          image: product.image,
+          sku: product.id,
+          ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating,
+            reviewCount: product.votes ?? 0,
+            bestRating: 5,
+          },
+          ...(product.price != null
+            ? {
+                offers: {
+                  "@type": "Offer",
+                  price: product.price,
+                  priceCurrency: product.currency || "USD",
+                  availability: "https://schema.org/InStock",
+                  url: typeof window !== "undefined" ? window.location.href : undefined,
+                },
+              }
+            : {}),
+        }
+      : null;
+
   return (
     <Layout>
+      <SEO
+        title={product.seo?.metaTitle || product.title || "ReviewHub review"}
+        description={product.seo?.metaDescription || product.review?.summary}
+      />
+      {jsonLd && <JSONLD data={jsonLd} />}
       {/* sticky jump bar */}
       <JumpToSection sections={jumpSections} />
 

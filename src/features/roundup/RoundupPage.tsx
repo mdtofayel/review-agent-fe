@@ -680,6 +680,23 @@ export default function RoundupDetailPage() {
       name: p.title,
     })),
   };
+
+  const ldFaqPage =
+    article.faqs && article.faqs.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: article.faqs.map((faq) => ({
+            "@type": "Question",
+            name: faq.q,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: faq.a_md,
+            },
+          })),
+        }
+      : null;
+
   function linkifyModelNames(text: string, products: RoundupProduct[]) {
   if (!text) return text;
 
@@ -710,6 +727,7 @@ return (
       description={article.seo?.description}
     />
     <JSONLD data={ldItemList} />
+    {ldFaqPage && <JSONLD data={ldFaqPage} />}
 
     <JumpToSection sections={sections} />
     <SupportStrip />

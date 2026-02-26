@@ -22,7 +22,7 @@ export default function Navbar() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const [openRootId, setOpenRootId] = useState<number | null>(null);
+  const [openRootId, setOpenRootId] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
 
   const { visibleRoots, overflowRoots } = useMemo(() => {
@@ -45,7 +45,7 @@ export default function Navbar() {
     nav(`/search?q=${encodeURIComponent(trimmed)}`);
   }
 
-  function toggleRoot(id: number) {
+  function toggleRoot(id: string) {
     setOpenRootId(prev => (prev === id ? null : id));
     setMoreOpen(false);
   }
@@ -193,14 +193,8 @@ export default function Navbar() {
             </div>
           )}
 
-          {import.meta.env.DEV && (
-            <Link
-              to="/admin"
-              className="font-medium text-blue-100 hover:underline"
-            >
-              Admin
-            </Link>
-          )}
+          {/* Admin is not linked in the navbar. There is no public "admin" role or auth;
+              only staff who know the URL use /admin. Add auth later and then show Admin here when logged in. */}
         </nav>
       </div>
     </header>
